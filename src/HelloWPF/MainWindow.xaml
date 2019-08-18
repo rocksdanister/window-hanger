@@ -13,10 +13,8 @@
         ShowIconOnTitleBar="True"         
         GlowBrush="Olive"
         Title="Hanger" Height="720" Width="1280" >
-    
+
     <Grid Name="tabGrid">
-        <TabControl Name="tabControl1" TabStripPlacement="Left"  SelectionChanged="TcSample_SelectionChanged"  Margin="0,0,693.6,0">
-        </TabControl>
+        <TabControl Name="tabControl1" TabStripPlacement="Left" Margin="0,0,693.6,0"/>
     </Grid>
-    
 </Controls:MetroWindow>

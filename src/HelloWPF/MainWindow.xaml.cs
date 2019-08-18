@@ -298,26 +298,16 @@ namespace Hanger
             };
             //tabControl1.Items.Add(tabPage1);
             processInfo.tabPage = tabPage1;
+            tabPage1.PreviewMouseLeftButtonDown += TabItemClicked;
             tabControl1.Items.Add(processInfo.tabPage);
         }
 
-        private void TcSample_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {           
-            //temp fix.
-            if (!tabGrid.IsMouseOver )
-            {
-                if(tabControl1.SelectedIndex > 0)
-                    tabControl1.SelectedIndex = tabControl1.SelectedIndex - 1;
-                e.Handled = true;
-                return;
-            }
-            
-            if (e.OriginalSource is TabControl) 
-            {
-                //Debug.WriteLine("index changed!:- " + tabControl1.SelectedIndex + " " + tabControl1.SelectedItem);
+        private void TabItemClicked(object sender, MouseButtonEventArgs e)
+        {
+            Debug.WriteLine("index changed!:- " + tabControl1.SelectedIndex + " " + tabControl1.SelectedItem);
                 foreach (var item in procInfo)
                 {
-                    if (item.tabPage == tabControl1.SelectedItem )
+                    if (item.tabPage == sender)
                     {
                         StaticPinvoke.ShowWindow(item.handle, (uint)5);
                         StaticPinvoke.SetForegroundWindow(item.handle);
@@ -328,8 +318,7 @@ namespace Hanger
                         StaticPinvoke.ShowWindow(item.handle, (uint)0);
                     }
                 }
-  
-            }
+
         }
 
         #region WINDOWS_MSG
