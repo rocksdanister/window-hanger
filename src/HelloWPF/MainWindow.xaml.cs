@@ -71,8 +71,10 @@ namespace Hanger
                         if (item.tabPage == tabControl1.SelectedItem)
                         {
                             tmp = item;
+                            //I legit feel bad about this... YIKES
+                            WaitForMax(tmp);                            
                         }
-                        StaticPinvoke.SetWindowPos(item.handle, 1, (int)tabControl1.PointToScreen(new Point(0, 0)).X + 100, (int)tabControl1.PointToScreen(new Point(0, 0)).Y + 100, (int)this.Width, (int)this.Height, 0x0010);
+
                     }
                     if (tmp != null)
                     {
@@ -93,9 +95,12 @@ namespace Hanger
                     foreach (var item in procInfo)
                     {
                         //StaticPinvoke.ShowWindow(item.handle, (uint)StaticPinvoke.ShowWindowCommands.SW_RESTORE);
-                        if (item.tabPage == tabControl1.SelectedItem)
+
+                        if (tabControl1.SelectedItem.Equals(item.tabPage))
                         {
                             tmp = item;
+                            //imsoooofuckingsorry:(
+                            WaitForMax(tmp);
                         }
                     }
                     if (tmp != null)
@@ -138,7 +143,7 @@ namespace Hanger
                 {
                     //StaticPinvoke.ShowWindow(item.handle, (uint)0);
                 }
-                StaticPinvoke.SetWindowPos(item.handle, 1, (int)tabControl1.PointToScreen(new Point(0, 0)).X + 100, (int)tabControl1.PointToScreen(new Point(0, 0)).Y + 100, (int)this.Width, (int)this.Height, 0x0010);
+                SetWindowPosTab(item.handle);
             }
         }
 
@@ -236,7 +241,7 @@ namespace Hanger
             StaticPinvoke.SetWindowLong(tmp, GWL_EXSTYLE, StaticPinvoke.GetWindowLong(tmp, GWL_EXSTYLE) | WS_EX_TOOLWINDOW | WS_EX_TOPMOST);
             StaticPinvoke.ShowWindow(tmp, (uint)StaticPinvoke.ShowWindowCommands.SW_SHOW);
 
-            StaticPinvoke.SetWindowPos(tmp, 1, (int)tabControl1.PointToScreen(new Point(0, 0)).X + 100, (int)tabControl1.PointToScreen(new Point(0, 0)).Y + 100, (int)this.Width, (int)this.Height, 0x0010);
+            SetWindowPosTab(tmp);
 
             IntPtr windowHandle = new WindowInteropHelper(Application.Current.MainWindow).Handle;
 
@@ -253,7 +258,7 @@ namespace Hanger
                 /*
                 foreach (var item in procInfo)
                 {
-                    StaticPinvoke.SetWindowPos(tmp, 1, (int)tabControl1.PointToScreen(new Point(0, 0)).X + 100, (int)tabControl1.PointToScreen(new Point(0, 0)).Y + 100, (int)this.Width, (int)this.Height, 0x0010);
+                     SetWindowPosTab(temp);
                 }
                 */
                 StaticPinvoke.SetForegroundWindow(windowHandle);
@@ -292,14 +297,39 @@ namespace Hanger
 
         private void CreateTabPage(Process obj)
         {
+            System.Drawing.Icon temp = System.Drawing.Icon.ExtractAssociatedIcon(obj.MainModule.FileName);
+
+            System.Drawing.Bitmap bitmap = temp.ToBitmap();
+            IntPtr hBitmap = bitmap.GetHbitmap();
+
+            ImageSource Icon =
+            Imaging.CreateBitmapSourceFromHBitmap(
+                hBitmap, IntPtr.Zero, Int32Rect.Empty,
+                BitmapSizeOptions.FromEmptyOptions());
+
+            Image image = new Image {
+                Source = Icon,
+                Width = 40,
+                Height = 40
+            };
+            RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+
+
             TabItem tabPage1 = new TabItem
             {
-                Header = obj.ProcessName
+                Header = image,
+                MaxWidth=48,
+                MaxHeight = 48+12,
+                Width = 48,
+                Height = 48+12,
+                Padding = new Thickness(0,4,0,8),
+                ToolTip = obj.ProcessName
             };
             //tabControl1.Items.Add(tabPage1);
             processInfo.tabPage = tabPage1;
             tabPage1.PreviewMouseLeftButtonDown += TabItemClicked;
             tabControl1.Items.Add(processInfo.tabPage);
+            tabControl1.SelectedItem = tabPage1;
         }
 
         private void TabItemClicked(object sender, MouseButtonEventArgs e)
@@ -374,7 +404,7 @@ namespace Hanger
                 {
                     tmp = item;
                 }
-                StaticPinvoke.SetWindowPos(item.handle, 1, (int)tabControl1.PointToScreen(new Point(0, 0)).X + 100, (int)tabControl1.PointToScreen(new Point(0, 0)).Y + 100, (int)this.Width, (int)this.Height, 0x0010);
+                SetWindowPosTab(item.handle);
             }
             if(tmp != null)
             {
@@ -385,6 +415,18 @@ namespace Hanger
         
         }
 
+        private void SetWindowPosTab(IntPtr handle) {
+            int xOffSet = 60;
+            int yOffSet = 5;
+           
+            StaticPinvoke.SetWindowPos(handle, 0, (int)tabControl1.PointToScreen(new Point(0, 0)).X + xOffSet, (int)tabControl1.PointToScreen(new Point(0, 0)).Y + yOffSet, (int)tabGrid.ActualWidth - xOffSet - 5, (int)tabGrid.ActualHeight - yOffSet - 5, 0x0010);
+            
+        }
+        private async void WaitForMax(ProcessInfo tmp) {
+            await Task.Delay(50);
+            SetWindowPosTab(tmp.handle);
+        }
+        
         #endregion WINDOWS_MSG
 
     }
