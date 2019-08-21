@@ -16,14 +16,13 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
-using MahApps.Metro.Controls;
 
 namespace Hanger
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : MetroWindow
+    public partial class MainWindow : Window
     {
         private class ProcessInfo
         {
@@ -35,18 +34,23 @@ namespace Hanger
         //List of active tab processes.
         List<ProcessInfo> procInfo = new List<ProcessInfo>();
 
+        SolidColorBrush brushGray = new SolidColorBrush(Colors.DarkGray);
+        SolidColorBrush brushBlack = new SolidColorBrush(Colors.Black);
+
         IntPtr hWnd, shellHandle, desktopHandle;
         Process currProcess = null;
         int processID;
         Rectangle screenBounds;
         StaticPinvoke.RECT appBounds;
         DispatcherTimer dispatcherTimer = new DispatcherTimer();
+        double dpiX = 1, dpiY = 1;
 
         public MainWindow()
         {
+
             InitializeComponent();
             this.LocationChanged += MainWindow_LocationChanged;
-            //this.SizeChanged += MainWindow_SizeChanged;
+            this.SizeChanged += MainWindow_SizeChanged;
             this.Closing += MainWindow_Closing;
             this.StateChanged += MainWindow_StateChanged;
 
@@ -56,61 +60,88 @@ namespace Hanger
             dispatcherTimer.Tick += new EventHandler(dispatcherTimer_Tick);
             dispatcherTimer.Interval = new TimeSpan(0, 0, 1);
             dispatcherTimer.Start();
+        }
 
+        void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            this.Background = brushBlack;//new LinearGradientBrush(Colors.Black, Colors.DarkGray, 90);
+
+            //Current monitor dpi, todo:- check if monitor changed
+            Matrix m =
+                PresentationSource.FromVisual(Application.Current.MainWindow).CompositionTarget.TransformToDevice;
+            dpiX= m.M11;
+            dpiY = m.M22;
+            Debug.WriteLine("DPI(x,y):- " + dpiX + " " + dpiY);
         }
 
         private void MainWindow_StateChanged(object sender, EventArgs e)
         {
-            ProcessInfo tmp = null;
             switch (this.WindowState)
             {
-                case WindowState.Maximized: //app not maximisin mmm
-                    Debug.WriteLine("maximised");
-                    foreach (var item in procInfo)
-                    {
-                        if (item.tabPage == tabControl1.SelectedItem)
-                        {
-                            tmp = item;
-                        }
-                        StaticPinvoke.SetWindowPos(item.handle, 1, (int)tabControl1.PointToScreen(new Point(0, 0)).X + 100, (int)tabControl1.PointToScreen(new Point(0, 0)).Y + 100, (int)this.Width, (int)this.Height, 0x0010);
-                    }
-                    if (tmp != null)
-                    {
-                        StaticPinvoke.ShowWindow(tmp.handle, (uint)StaticPinvoke.ShowWindowCommands.SW_SHOW);
-                        StaticPinvoke.SetForegroundWindow(tmp.handle);
-                        StaticPinvoke.SetFocus(tmp.handle);
-                    }
+                case WindowState.Maximized:
+                    //called before window fully maximised, even pinvoke isZoomed() didnt help. Check MainWindow_SizeChanged() instead.
+                    if (dispatcherTimer.IsEnabled == false) //stop checking for foreground app
+                        dispatcherTimer.Start();
                     break;
                 case WindowState.Minimized:
                     Debug.WriteLine("minimized");
+                    if (dispatcherTimer.IsEnabled == true) //stop checking for foreground app
+                        dispatcherTimer.Stop();
                     foreach (var item in procInfo)
                     {
+                        //StaticPinvoke.ShowWindow(item.handle, (uint)StaticPinvoke.ShowWindowCommands.SW_MINIMIZE); //todo:- window not restoring properly(eg: firefox), fix bug.
                         StaticPinvoke.ShowWindow(item.handle, (uint)StaticPinvoke.ShowWindowCommands.SW_HIDE);
                     }
                     break;
-                case WindowState.Normal: //todo use wndproc to preventapplication focus on minimize ->normal
+                case WindowState.Normal: //todo use wndproc to prevent application focus on minimize ->normal
+                    //Same as maximised,  Check MainWindow_SizeChanged() instead.
                     Debug.WriteLine("normal");
-                    foreach (var item in procInfo)
-                    {
-                        //StaticPinvoke.ShowWindow(item.handle, (uint)StaticPinvoke.ShowWindowCommands.SW_RESTORE);
-                        if (item.tabPage == tabControl1.SelectedItem)
-                        {
-                            tmp = item;
-                        }
-                    }
-                    if (tmp != null)
-                    {
-                        StaticPinvoke.ShowWindow(tmp.handle, (uint)StaticPinvoke.ShowWindowCommands.SW_SHOW);
-                        StaticPinvoke.SetForegroundWindow(tmp.handle);
-                        StaticPinvoke.SetFocus(tmp.handle);
-                    }
+                    if (dispatcherTimer.IsEnabled == false) //stop checking for foreground app
+                        dispatcherTimer.Start();
                     break;
             }
         }
 
         private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-
+            if(this.WindowState == WindowState.Maximized)
+            {
+                ProcessInfo tmp = null;
+                foreach (var item in procInfo)
+                {
+                    if (item.tabPage == tabControl1.SelectedItem)
+                    {
+                        tmp = item;
+                    }
+                    SetWindowPosTab(item.handle);
+                }
+                if (tmp != null)
+                {
+                    StaticPinvoke.ShowWindow(tmp.handle, (uint)StaticPinvoke.ShowWindowCommands.SW_RESTORE);
+                    StaticPinvoke.ShowWindow(tmp.handle, (uint)StaticPinvoke.ShowWindowCommands.SW_SHOW);
+                    StaticPinvoke.SetForegroundWindow(tmp.handle);
+                    StaticPinvoke.SetFocus(tmp.handle);
+                }
+            }
+            else if( this.WindowState == WindowState.Normal)
+            {
+                ProcessInfo tmp = null;
+                foreach (var item in procInfo)
+                {
+                    if (item.tabPage == tabControl1.SelectedItem)
+                    {
+                        tmp = item;
+                    }
+                    SetWindowPosTab(item.handle);
+                }
+                if (tmp != null)
+                {
+                    StaticPinvoke.ShowWindow(tmp.handle, (uint)StaticPinvoke.ShowWindowCommands.SW_RESTORE);
+                    StaticPinvoke.ShowWindow(tmp.handle, (uint)StaticPinvoke.ShowWindowCommands.SW_SHOW);
+                    StaticPinvoke.SetForegroundWindow(tmp.handle);
+                    StaticPinvoke.SetFocus(tmp.handle);
+                }
+            }
         }
 
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -121,7 +152,7 @@ namespace Hanger
             foreach (var item in procInfo)
             {
                 StaticPinvoke.ShowWindow(item.handle, (uint)0);
-                StaticPinvoke.SetWindowLong(item.handle, GWL_EXSTYLE, StaticPinvoke.GetWindowLong(item.handle, GWL_EXSTYLE) | WS_EX_APPWINDOW);
+                StaticPinvoke.SetWindowLong(item.handle, GWL_EXSTYLE, WS_EX_APPWINDOW);
                 StaticPinvoke.ShowWindow(item.handle, (uint)5);
             }
         }
@@ -138,11 +169,11 @@ namespace Hanger
                 {
                     //StaticPinvoke.ShowWindow(item.handle, (uint)0);
                 }
-                StaticPinvoke.SetWindowPos(item.handle, 1, (int)tabControl1.PointToScreen(new Point(0, 0)).X + 100, (int)tabControl1.PointToScreen(new Point(0, 0)).Y + 100, (int)this.Width, (int)this.Height, 0x0010);
+                SetWindowPosTab(item.handle);
             }
         }
 
-        private void dispatcherTimer_Tick(object sender, EventArgs e)
+        private async void dispatcherTimer_Tick(object sender, EventArgs e)
         {
             //System.Diagnostics.Debug.WriteLine(tabControl1.SelectedIndex);
             hWnd = StaticPinvoke.GetForegroundWindow();
@@ -180,8 +211,7 @@ namespace Hanger
             
             if ((Math.Abs(appBounds.Top - this.Top) + Math.Abs(appBounds.Left - this.Left)) <= 500) //how close it is to topleft
             {
-
-
+  
                 if (currProcess.MainWindowHandle == IntPtr.Zero || hWnd == null || hWnd == IntPtr.Zero)
                     return;
 
@@ -209,6 +239,24 @@ namespace Hanger
                 {
                     processInfo.handle = currProcess.MainWindowHandle;
                 }
+                //wait before pinnin
+                if (dispatcherTimer.IsEnabled == true)
+                    dispatcherTimer.Stop();
+                this.Background = brushGray;
+
+                for (int i = 0; i < 5; i++)
+                {
+                    await Task.Delay(100);
+                    StaticPinvoke.GetWindowRect(hWnd, out appBounds);
+                    if (!((Math.Abs(appBounds.Top - this.Top) + Math.Abs(appBounds.Left - this.Left)) <= 500)) //window moved away after waitin
+                    {
+                        if (dispatcherTimer.IsEnabled == false)
+                            dispatcherTimer.Start();
+                        this.Background = brushBlack;
+                        return;
+                    }
+                }
+                this.Background = brushBlack;
 
                 processInfo.process = currProcess;
                 processInfo.process.EnableRaisingEvents = true;
@@ -217,7 +265,9 @@ namespace Hanger
                 procInfo[procInfo.Count - 1].process.Exited += Process_Exited1;
 
                 PinWindow(procInfo[procInfo.Count - 1]);
-                    
+                //restarting
+                if(dispatcherTimer.IsEnabled == false)
+                    dispatcherTimer.Start();
             }
         }
 
@@ -233,10 +283,10 @@ namespace Hanger
             IntPtr tmp = obj.handle;
             // Remove the Window from the Taskbar, not working for some apps
             StaticPinvoke.ShowWindow(tmp, (uint)StaticPinvoke.ShowWindowCommands.SW_HIDE);
-            StaticPinvoke.SetWindowLong(tmp, GWL_EXSTYLE, StaticPinvoke.GetWindowLong(tmp, GWL_EXSTYLE) | WS_EX_TOOLWINDOW | WS_EX_TOPMOST);
+            StaticPinvoke.SetWindowLong(tmp, GWL_EXSTYLE, StaticPinvoke.GetWindowLong(tmp, GWL_EXSTYLE) | WS_EX_TOOLWINDOW | WS_EX_TOPMOST );
             StaticPinvoke.ShowWindow(tmp, (uint)StaticPinvoke.ShowWindowCommands.SW_SHOW);
 
-            StaticPinvoke.SetWindowPos(tmp, 1, (int)tabControl1.PointToScreen(new Point(0, 0)).X + 100, (int)tabControl1.PointToScreen(new Point(0, 0)).Y + 100, (int)this.Width, (int)this.Height, 0x0010);
+            SetWindowPosTab(tmp);
 
             IntPtr windowHandle = new WindowInteropHelper(Application.Current.MainWindow).Handle;
 
@@ -253,7 +303,7 @@ namespace Hanger
                 /*
                 foreach (var item in procInfo)
                 {
-                    StaticPinvoke.SetWindowPos(tmp, 1, (int)tabControl1.PointToScreen(new Point(0, 0)).X + 100, (int)tabControl1.PointToScreen(new Point(0, 0)).Y + 100, (int)this.Width, (int)this.Height, 0x0010);
+                     SetWindowPosTab(temp);
                 }
                 */
                 StaticPinvoke.SetForegroundWindow(windowHandle);
@@ -261,6 +311,15 @@ namespace Hanger
 
                 StaticPinvoke.SetForegroundWindow(tmp);
                 //StaticPinvoke.SetFocus(tmp);
+            }
+            
+            //hiding previous windows
+            foreach (var item in procInfo)
+            {
+                if(item.tabPage != tabControl1.SelectedItem)
+                {
+                    StaticPinvoke.ShowWindow(item.handle, (uint)StaticPinvoke.ShowWindowCommands.SW_HIDE);
+                }
             }
             
         }
@@ -275,31 +334,79 @@ namespace Hanger
                 item.process.Refresh();
                 if (item.process.HasExited == true)
                 {
-                    this.Invoke(new Action(() => tabControl1.Items.Remove(item.tabPage)));
+                    this.Dispatcher.Invoke(new Action(() => tabControl1.Items.Remove(item.tabPage)));
                     tmp = item;
                     break;
                 }
             }
             if (tmp != null)
-            {
+            {               
                 procInfo.Remove(tmp);
-                if(procInfo.Count >0)
-                {
-                    //fuck my tmp fix
+                if( procInfo.Count > 0 )
+                {                   
+                    //switch to previous window
+                    this.Dispatcher.Invoke(new Action(() => TabItemClicked( tabControl1.SelectedItem, null )));
                 }
             }
         }
 
         private void CreateTabPage(Process obj)
         {
+            /*
+            System.Drawing.Icon temp = System.Drawing.Icon.ExtractAssociatedIcon(obj.MainModule.FileName);
+
+            System.Drawing.Bitmap bitmap = temp.ToBitmap();
+            IntPtr hBitmap = bitmap.GetHbitmap();
+
+            ImageSource Icon =
+            Imaging.CreateBitmapSourceFromHBitmap(
+                hBitmap, IntPtr.Zero, Int32Rect.Empty,
+                BitmapSizeOptions.FromEmptyOptions()); 
+            */
+            BitmapSource src;
+            IntPtr res = IntPtr.Zero;
+            if (Environment.Is64BitProcess)
+            {
+                StaticPinvoke.SHFILEINFO info = new StaticPinvoke.SHFILEINFO();
+                res = StaticPinvoke.SHGetFileInfo(obj.MainModule.FileName, 0, ref info, (uint)Marshal.SizeOf(info), 0x100 | 0x000 | 0x010);
+                //dont forget to call DestroyIcon
+                src = Imaging.CreateBitmapSourceFromHIcon(info.hIcon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+            }
+            else
+                src = BitmapSource.Create(1, 1, 1, 1, PixelFormats.BlackWhite, null, new byte[] { 0 }, 1);
+
+            Image image = new Image
+            {
+                Source = src,
+                Width = 40,
+                Height = 40,
+                UseLayoutRounding = true //suppose to help with blur
+            };
+            RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+
             TabItem tabPage1 = new TabItem
             {
-                Header = obj.ProcessName
+                Header = image,
+                MaxWidth=48,
+                MaxHeight = 48+12,
+                Width = 48,
+                Height = 48+12,
+                Padding = new Thickness(0,4,0,8),
+                ToolTip = obj.ProcessName
             };
+
             //tabControl1.Items.Add(tabPage1);
             processInfo.tabPage = tabPage1;
             tabPage1.PreviewMouseLeftButtonDown += TabItemClicked;
             tabControl1.Items.Add(processInfo.tabPage);
+            tabControl1.SelectedItem = tabPage1;
+            //TabItemClicked(tabControl1.SelectedItem, null);
+
+            //cleanup
+            StaticPinvoke.DestroyIcon(res);
+            src = null;// letting GC knw, just in case.
+            //StaticPinvoke.DeleteObject(hBitmap);
+
         }
 
         private void TabItemClicked(object sender, MouseButtonEventArgs e)
@@ -374,7 +481,7 @@ namespace Hanger
                 {
                     tmp = item;
                 }
-                StaticPinvoke.SetWindowPos(item.handle, 1, (int)tabControl1.PointToScreen(new Point(0, 0)).X + 100, (int)tabControl1.PointToScreen(new Point(0, 0)).Y + 100, (int)this.Width, (int)this.Height, 0x0010);
+                SetWindowPosTab(item.handle);
             }
             if(tmp != null)
             {
@@ -385,6 +492,14 @@ namespace Hanger
         
         }
 
+        private void SetWindowPosTab(IntPtr handle) {
+            int xOffSet = 60;
+            int yOffSet = 5;
+           
+            StaticPinvoke.SetWindowPos(handle, 0, (int)tabControl1.PointToScreen(new Point(0, 0)).X + xOffSet, (int)tabControl1.PointToScreen(new Point(0, 0)).Y + yOffSet, (int)(tabGrid.ActualWidth*dpiX - xOffSet - 5), (int)(tabGrid.ActualHeight*dpiY - yOffSet - 5), 0x0010);
+            
+        }
+ 
         #endregion WINDOWS_MSG
 
     }

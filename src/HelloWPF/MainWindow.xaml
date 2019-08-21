@@ -1,20 +1,16 @@
-﻿<Controls:MetroWindow x:Class="Hanger.MainWindow"
+﻿<Window x:Class="Hanger.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
-	    xmlns:Behaviours="clr-namespace:MahApps.Metro.Behaviours;assembly=MahApps.Metro"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:HelloWPF"
-        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         mc:Ignorable="d"
         WindowStartupLocation="CenterScreen"
-        ShowIconOnTitleBar="True"         
-        GlowBrush="Olive"
-        Title="Hanger" Height="720" Width="1280" >
+        Title="Hanger" Height="720" Width="1280" Loaded="MainWindow_Loaded" Background="White" >
 
     <Grid Name="tabGrid">
-        <TabControl Name="tabControl1" TabStripPlacement="Left" Margin="0,0,693.6,0"/>
+        <TabControl Name="tabControl1" TabStripPlacement="Left" Margin="0,0,693.6,0" Background="#00000000" Foreground="#00000000" SnapsToDevicePixels="True" BorderThickness="0"/>
     </Grid>
-</Controls:MetroWindow>
+
+</Window>

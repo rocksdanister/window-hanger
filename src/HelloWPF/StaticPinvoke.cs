@@ -16,6 +16,29 @@ namespace Hanger
         //[DllImportAttribute("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         //public static extern int MessageBox(IntPtr hwnd, String text, String caption, uint type);
 
+        #region icon
+        [DllImport("Shell32.dll", CharSet = CharSet.Auto)]
+        public static extern IntPtr SHGetFileInfo(string path, UInt32 attrs, ref SHFILEINFO info, UInt32 size, UInt32 flags);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool DestroyIcon(IntPtr hIcon);
+
+        [System.Runtime.InteropServices.DllImport("gdi32.dll")]
+        public static extern bool DeleteObject(IntPtr hObject);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        public struct SHFILEINFO
+        {
+            public IntPtr hIcon;
+            public int iIcon;
+            public uint dwAttrs;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+            public string displayName;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)]
+            public string typeName;
+        }
+        #endregion icon
+
         #region SetupDesktop.cs
 
         [Flags]
