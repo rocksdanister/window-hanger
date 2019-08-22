@@ -10,7 +10,14 @@
         Title="Hanger" Height="720" Width="1280" Loaded="MainWindow_Loaded" Background="White" >
 
     <Grid Name="tabGrid">
-        <TabControl Name="tabControl1" TabStripPlacement="Left" Margin="0,0,693.6,0" Background="#00000000" Foreground="#00000000" SnapsToDevicePixels="True" BorderThickness="0"/>
+        <ScrollViewer  HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto">
+        <TabControl Name="tabControl1" TabStripPlacement="Left" Margin="0,0,693.6,0" Background="#00000000" Foreground="#00000000" SnapsToDevicePixels="True" BorderThickness="0" BorderBrush="{x:Null}">
+            
+            <TabControl.Effect>
+                <DropShadowEffect/>
+            </TabControl.Effect>
+        </TabControl>
+        </ScrollViewer>
     </Grid>
 
 </Window>

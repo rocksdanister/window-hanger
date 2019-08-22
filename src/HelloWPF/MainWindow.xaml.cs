@@ -34,8 +34,8 @@ namespace Hanger
         //List of active tab processes.
         List<ProcessInfo> procInfo = new List<ProcessInfo>();
 
-        SolidColorBrush brushGray = new SolidColorBrush(Colors.DarkGray);
-        SolidColorBrush brushBlack = new SolidColorBrush(Colors.Black);
+        SolidColorBrush brushLight = new SolidColorBrush(Color.FromRgb(90,90,90));
+        SolidColorBrush brushDark = new SolidColorBrush(Color.FromRgb(37, 37, 37));
 
         IntPtr hWnd, shellHandle, desktopHandle;
         Process currProcess = null;
@@ -64,26 +64,41 @@ namespace Hanger
 
         void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            this.Background = brushBlack;//new LinearGradientBrush(Colors.Black, Colors.DarkGray, 90);
-
+            this.Background = brushDark;//new LinearGradientBrush(Colors.Black, Colors.DarkGray, 90);
+            this.Title = "Hanger : Drag applications to pin";
             //Current monitor dpi, todo:- check if monitor changed
             Matrix m =
                 PresentationSource.FromVisual(Application.Current.MainWindow).CompositionTarget.TransformToDevice;
-            dpiX= m.M11;
+            dpiX = m.M11;
             dpiY = m.M22;
             Debug.WriteLine("DPI(x,y):- " + dpiX + " " + dpiY);
+
+            for (int i = 1; i <= 100; i++)
+            {
+
+              //  tabControl1.Items.Add(new TabItem() { Header = "Item " + i });
+
+            }
+
         }
 
+        WindowState prevState = WindowState.Normal;
+        WindowState currState = WindowState.Minimized;
         private void MainWindow_StateChanged(object sender, EventArgs e)
         {
+            //currState = WindowState;
             switch (this.WindowState)
             {
                 case WindowState.Maximized:
-                    //called before window fully maximised, even pinvoke isZoomed() didnt help. Check MainWindow_SizeChanged() instead.
+                    Debug.WriteLine("maximised");
+                    if (prevState == WindowState.Minimized)
+                        MainWindow_SizeChanged(null, null);
+                    //called before window fully maximised, even pinvoke isZoomed() didnt help. Using MainWindow_SizeChanged() instead.
                     if (dispatcherTimer.IsEnabled == false) //stop checking for foreground app
                         dispatcherTimer.Start();
                     break;
                 case WindowState.Minimized:
+                    prevState = WindowState.Minimized;
                     Debug.WriteLine("minimized");
                     if (dispatcherTimer.IsEnabled == true) //stop checking for foreground app
                         dispatcherTimer.Stop();
@@ -100,11 +115,18 @@ namespace Hanger
                         dispatcherTimer.Start();
                     break;
             }
+            //prevState = this.WindowState;
         }
 
         private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            if(this.WindowState == WindowState.Maximized)
+            Debug.WriteLine("States: - " + this.WindowState);
+            currState = this.WindowState;
+            //return;
+            if (prevState == currState)
+                return;
+
+            if (this.WindowState == WindowState.Maximized)
             {
                 ProcessInfo tmp = null;
                 foreach (var item in procInfo)
@@ -123,7 +145,7 @@ namespace Hanger
                     StaticPinvoke.SetFocus(tmp.handle);
                 }
             }
-            else if( this.WindowState == WindowState.Normal)
+            else if (this.WindowState == WindowState.Normal)
             {
                 ProcessInfo tmp = null;
                 foreach (var item in procInfo)
@@ -142,6 +164,8 @@ namespace Hanger
                     StaticPinvoke.SetFocus(tmp.handle);
                 }
             }
+
+            prevState = this.WindowState;
         }
 
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -190,12 +214,16 @@ namespace Hanger
             StaticPinvoke.GetWindowRect(hWnd, out appBounds);
             if (currProcess.ProcessName.Equals(AppDomain.CurrentDomain.FriendlyName.Split('.')[0], StringComparison.InvariantCultureIgnoreCase)
                     || currProcess.ProcessName.Equals("devenv", StringComparison.InvariantCultureIgnoreCase)
+                    || currProcess.ProcessName.Equals("discord", StringComparison.InvariantCultureIgnoreCase) //tray app, discord buggy
+                    || currProcess.ProcessName.Equals("taskmgr", StringComparison.InvariantCultureIgnoreCase) //taskmanager
                     || IntPtr.Equals(currProcess.MainWindowHandle, IntPtr.Zero) // no gui
                     || currProcess.ProcessName.Equals("shellexperiencehost", StringComparison.InvariantCultureIgnoreCase) //notification tray etc
                     || currProcess.ProcessName.Equals("searchui", StringComparison.InvariantCultureIgnoreCase) //startmenu search etc
                     || currProcess.ProcessName.Equals("applicationframehost", StringComparison.InvariantCultureIgnoreCase) //uwp apps, system clock etc
                     || hWnd.Equals(desktopHandle)
                     || hWnd.Equals(shellHandle)
+                    || StaticPinvoke.IsZoomed(hWnd) //fullscreen
+                    || StaticPinvoke.IsIconic(hWnd) //minmized, some apps can retain foreground when miminimzed to tray like discord
                     //|| StaticPinvoke.IsWindowVisible(hWnd)
             )
             {
@@ -208,8 +236,14 @@ namespace Hanger
                 if (currProcess.Id == item.process.Id)
                     return;
             }
-            
-            if ((Math.Abs(appBounds.Top - this.Top) + Math.Abs(appBounds.Left - this.Left)) <= 500) //how close it is to topleft
+            if (this.WindowState == WindowState.Maximized)
+            {
+                //app is not updating the values automatically for some reason!
+                this.Top = 0;
+                this.Left = 0;
+            }
+            Debug.WriteLine("this.top :- " + this.Top*dpiY + " " + appBounds.Top + " this.left:- " + this.Left*dpiX + " " + appBounds.Left);
+            if ((Math.Abs(appBounds.Top - this.Top*dpiY) + Math.Abs(appBounds.Left - this.Left*dpiX)) <= 500 && this.Top*dpiY < appBounds.Top && this.Left*dpiX < appBounds.Left) //how close it is to topleft
             {
   
                 if (currProcess.MainWindowHandle == IntPtr.Zero || hWnd == null || hWnd == IntPtr.Zero)
@@ -242,21 +276,23 @@ namespace Hanger
                 //wait before pinnin
                 if (dispatcherTimer.IsEnabled == true)
                     dispatcherTimer.Stop();
-                this.Background = brushGray;
-
-                for (int i = 0; i < 5; i++)
+                this.Background = brushLight;
+                this.Title = "PIN:- " + currProcess.ProcessName;
+                for (int i = 0; i < 7; i++)
                 {
                     await Task.Delay(100);
                     StaticPinvoke.GetWindowRect(hWnd, out appBounds);
-                    if (!((Math.Abs(appBounds.Top - this.Top) + Math.Abs(appBounds.Left - this.Left)) <= 500)) //window moved away after waitin
+                    if (!((Math.Abs(appBounds.Top*dpiY - this.Top) + Math.Abs(appBounds.Left - this.Left*dpiX)) <= 500 && this.Top*dpiY < appBounds.Top && this.Left*dpiX < appBounds.Left)) //window moved away after waitin
                     {
                         if (dispatcherTimer.IsEnabled == false)
                             dispatcherTimer.Start();
-                        this.Background = brushBlack;
+                        this.Title = "Hanger : Drag applications to pin";
+                        this.Background = brushDark;
                         return;
                     }
                 }
-                this.Background = brushBlack;
+                this.Title = "Hanger : Drag applications to pin";
+                this.Background = brushDark;
 
                 processInfo.process = currProcess;
                 processInfo.process.EnableRaisingEvents = true;
@@ -284,6 +320,7 @@ namespace Hanger
             // Remove the Window from the Taskbar, not working for some apps
             StaticPinvoke.ShowWindow(tmp, (uint)StaticPinvoke.ShowWindowCommands.SW_HIDE);
             StaticPinvoke.SetWindowLong(tmp, GWL_EXSTYLE, StaticPinvoke.GetWindowLong(tmp, GWL_EXSTYLE) | WS_EX_TOOLWINDOW | WS_EX_TOPMOST );
+            //StaticPinvoke.SetWindowLong(tmp, GWL_EXSTYLE, WS_EX_TOOLWINDOW | WS_EX_TOPMOST);
             StaticPinvoke.ShowWindow(tmp, (uint)StaticPinvoke.ShowWindowCommands.SW_SHOW);
 
             SetWindowPosTab(tmp);
@@ -381,19 +418,25 @@ namespace Hanger
                 Width = 40,
                 Height = 40,
                 UseLayoutRounding = true //suppose to help with blur
+                
             };
             RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
 
             TabItem tabPage1 = new TabItem
             {
                 Header = image,
-                MaxWidth=48,
-                MaxHeight = 48+12,
+                MaxWidth = 48,
+                MaxHeight = 48 + 12,
                 Width = 48,
-                Height = 48+12,
-                Padding = new Thickness(0,4,0,8),
-                ToolTip = obj.ProcessName
+                Height = 48 + 12,
+                Padding = new Thickness(0, 4, 0, 8),
+                ToolTip = obj.ProcessName,
+                Background = brushLight,
+                BorderBrush = brushDark
+                //BorderThickness = new Thickness(0,0,0,0)
+                
             };
+           // tabPage1.BorderThickness = new Thickness(0, 0, 0, 0);
 
             //tabControl1.Items.Add(tabPage1);
             processInfo.tabPage = tabPage1;
@@ -412,19 +455,24 @@ namespace Hanger
         private void TabItemClicked(object sender, MouseButtonEventArgs e)
         {
             Debug.WriteLine("index changed!:- " + tabControl1.SelectedIndex + " " + tabControl1.SelectedItem);
-                foreach (var item in procInfo)
+            ProcessInfo tmp = null;
+            foreach (var item in procInfo)
+            {
+                if (item.tabPage == sender)
                 {
-                    if (item.tabPage == sender)
-                    {
-                        StaticPinvoke.ShowWindow(item.handle, (uint)5);
-                        StaticPinvoke.SetForegroundWindow(item.handle);
-                        StaticPinvoke.SetFocus(item.handle);
-                    }
-                    else
-                    {
-                        StaticPinvoke.ShowWindow(item.handle, (uint)0);
-                    }
+                    tmp = item;             
                 }
+                else
+                {
+                    StaticPinvoke.ShowWindow(item.handle, (uint)0);
+                }
+            }
+            if(tmp != null)
+            {
+                StaticPinvoke.ShowWindow(tmp.handle, (uint)5);
+                StaticPinvoke.SetForegroundWindow(tmp.handle);
+                StaticPinvoke.SetFocus(tmp.handle);
+            }
 
         }
 
@@ -466,6 +514,7 @@ namespace Hanger
                 case WM_EXITSIZEMOVE: //resize
                     ResizeEnd();
                     break;
+                
                     
             }
             return IntPtr.Zero;
