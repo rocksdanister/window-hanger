@@ -5,3 +5,7 @@
 </p>
 
 Group applications into tabs, still in development.
+
+Attribution:
+
+Application Icon: https://icons8.com/
