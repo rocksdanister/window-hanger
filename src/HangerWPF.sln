@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.779
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloWPF", "HelloWPF\HelloWPF.csproj", "{958E52F8-10A4-4F09-A134-4B68033B12E5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hanger", "Hanger\Hanger.csproj", "{958E52F8-10A4-4F09-A134-4B68033B12E5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProcessModel", "ProcessModel\ProcessModel.csproj", "{EE91B057-1F0D-453F-893A-227F2A908690}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,14 @@ Global
 		{958E52F8-10A4-4F09-A134-4B68033B12E5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{958E52F8-10A4-4F09-A134-4B68033B12E5}.Release|x64.ActiveCfg = Release|x64
 		{958E52F8-10A4-4F09-A134-4B68033B12E5}.Release|x64.Build.0 = Release|x64
+		{EE91B057-1F0D-453F-893A-227F2A908690}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE91B057-1F0D-453F-893A-227F2A908690}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE91B057-1F0D-453F-893A-227F2A908690}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{EE91B057-1F0D-453F-893A-227F2A908690}.Debug|x64.Build.0 = Debug|Any CPU
+		{EE91B057-1F0D-453F-893A-227F2A908690}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE91B057-1F0D-453F-893A-227F2A908690}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE91B057-1F0D-453F-893A-227F2A908690}.Release|x64.ActiveCfg = Release|Any CPU
+		{EE91B057-1F0D-453F-893A-227F2A908690}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

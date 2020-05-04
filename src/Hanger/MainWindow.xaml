@@ -1,0 +1,51 @@
+﻿<Window x:Class="Hanger.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:HelloWPF"
+        mc:Ignorable="d"
+        WindowStartupLocation="CenterScreen"
+        Title="Hanger : Drag applications to pin" Height="720" Width="1280" Background="#FF222222"
+        ResizeMode="NoResize"
+        >
+
+    <Grid Name="tabGrid">
+
+        <!--<Border x:Name="PreviewBorder" BorderBrush="Yellow"  BorderThickness="1" Margin="50,50,50,50"/>-->
+        <Border x:Name="PreviewBorder" BorderBrush="Yellow"  BorderThickness="1" Width="1100" Height="650"/>
+
+        <ListBox x:Name="appListBox"  HorizontalAlignment="Left" 
+            ScrollViewer.VerticalScrollBarVisibility="Auto" 
+            ScrollViewer.HorizontalScrollBarVisibility="Hidden" Margin="5,10,5,5" VerticalAlignment="Stretch" Width="80" Background="{x:Null}" BorderBrush="{x:Null}" 
+            >
+  
+            <ListBox.ContextMenu>
+                <ContextMenu>
+                    <!--
+                    <MenuItem Header="{x:Static p:Resources.txtContextMenuShowOnDisk}" Click="MenuItem_ShowOnDisk_Click" ></MenuItem>
+                    -->
+                </ContextMenu>
+            </ListBox.ContextMenu>
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel Name="libraryPanel" Orientation="Vertical"/>
+                    <!--  <UniformGrid Columns="5" HorizontalAlignment="Stretch"/>  Margin="5,10,0,0"-->
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel ToolTip="{Binding ProcessName}" >
+                        <Image Source="{Binding Img}" Height="45" Width="45" Margin="0,0,0,0"
+                               VerticalAlignment="Top" HorizontalAlignment="Left" Stretch="Uniform" 
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <!-- Foreground="#FFF3F3F3"-->
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+    </Grid>
+
+</Window>
